@@ -1,0 +1,29 @@
+{
+  "name": "p2p-lending",
+  "version": "1.0.0",
+  "description": "Peer 2 peer lending platform on Ethereum blockchain",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mradkov/p2p-lending.git"
+  },
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "lending"
+  ],
+  "author": "Milen Radkov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mradkov/p2p-lending/issues"
+  },
+  "homepage": "https://github.com/mradkov/p2p-lending#readme",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
+    "express-handlebars": "^3.0.0"
+  }
+}
