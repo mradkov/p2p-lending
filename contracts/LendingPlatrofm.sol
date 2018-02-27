@@ -75,6 +75,7 @@ contract Credit is Owned {
     }
 
     event LogWithdrawBorrower(address indexed _address, uint indexed _amount, uint indexed _timestamp);
+    event LogCreditReceived(address indexed _address, uint indexed _amount, uint indexed _timestamp);
 
     function Credit(uint _requestedAmount, uint _repaymentsCount, string _creditDescription) public {
         requestedAmount = _requestedAmount;
@@ -84,6 +85,12 @@ contract Credit is Owned {
         creditDescription = _creditDescription;
 
         active = true;
+    }
+
+    function _receivePayment() public payable {
+        lendersBalances[msg.sender] += msg.value;
+        lendersList.push(msg.sender);
+        LogCreditReceived(msg.sender, msg.value, now);
     }
 
     function withdraw(uint _amount) public isLocked onlyOwner {
@@ -111,6 +118,7 @@ contract Credisimo is Owned {
     address[] public creditList;
 
     event LogWithdraw(address indexed _address, uint indexed _amount, uint indexed _timestamp);
+    event LogInvestInCredit(address indexed _address, uint indexed _amount, uint indexed _timestamp, address _credit);
 
     function Credisimo() public {
 
@@ -120,6 +128,13 @@ contract Credisimo is Owned {
         Credit credit = new Credit(_requestedAmount, _repaymentsCount, _creditDescription);
         creditList.push(credit);
         return credit;
+    }
+
+    function investInCredit(address _credit, uint _amount) public returns (bool) {
+        freeAmount[msg.sender] -= _amount;
+        LogInvestInCredit(msg.sender, _amount, now, _credit);
+        _credit.transfer(_amount);
+        return true;
     }
 
 
