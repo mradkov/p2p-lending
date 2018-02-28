@@ -62,6 +62,8 @@ contract Credit is Owned {
 
     address[] lendersList;
 
+    address creditBorrower;
+
     uint requestedAmount;
     uint repaymentsCount;
     string creditDescription;
@@ -69,7 +71,7 @@ contract Credit is Owned {
     uint remainingRepayments;
     bool active;
 
-    modifier isLocked(){
+    modifier isLocked() {
         require(this.balance == requestedAmount);
         _;
     }
@@ -81,7 +83,7 @@ contract Credit is Owned {
         requestedAmount = _requestedAmount;
         repaymentsCount = _repaymentsCount;
         remainingRepayments = _repaymentsCount;
-
+        creditBorrower = msg.sender;
         creditDescription = _creditDescription;
 
         active = true;
@@ -100,9 +102,13 @@ contract Credit is Owned {
     }
 
     function revertPaymentsIfNotFunded() public {
-        for (uint i = 0; i <= lendersList.length; i++){
+        for (uint i = 0; i <= lendersList.length; i++) {
             lendersList[i].transfer(lendersBalances[lendersList[i]]);
         }
+    }
+
+    function repay() public payable onlyOwner {
+        //
     }
 
 }
@@ -124,7 +130,7 @@ contract Credisimo is Owned {
 
     }
 
-    function applyForCredit(uint _requestedAmount, uint _repaymentsCount, string _creditDescription) public returns(address){
+    function applyForCredit(uint _requestedAmount, uint _repaymentsCount, string _creditDescription) public returns(address) {
         Credit credit = new Credit(_requestedAmount, _repaymentsCount, _creditDescription);
         creditList.push(credit);
         return credit;
