@@ -1,0 +1,32 @@
+.list_carousel.responsive {	
+	margin-left: 0;
+	width: 91%;
+}
+.list_carousel ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: block;
+}
+.list_carousel li {
+	text-align: center;		
+	padding: 0;
+	display: block;
+	float: left;
+	position: relative;
+}	
+.list_carousel li img{
+	width: 100% !important;
+	height: auto !important;
+	max-width: none !important;
+	max-height: none !important;
+}
+a.image_slider_prev{background-image: url(../images/navigation_arrows_left.png); width: 105px; height: 90px; z-index: 2;}
+a.image_slider_prev:hover{background-position: 0 -90px;}
+a.image_slider_next{background-image: url(../images/navigation_arrows_right.png); width: 105px; height: 90px; z-index: 2;}
+a.image_slider_next:hover{background-position: 0 -90px;}
+.carousel_pagination {margin-top: 50px; margin-bottom: 50px; margin-left: 160px;z-index: 1;position: relative;}
+.carousel_pagination a {margin: 0 0 0 9px; float: left;}
+.carousel_pagination a:first-child {margin: 0;}
+.carousel_pagination a {width: 21px; height: 21px; display: block; cursor: pointer; text-indent: -9999px; border-radius: 99px; border: 4px solid;}
+.caroufredsel_wrapper{z-index: 1 !important; margin-top: 0 !important; margin-left: 0 !important;}
