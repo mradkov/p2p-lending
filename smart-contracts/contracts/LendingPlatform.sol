@@ -42,7 +42,7 @@ contract Ownable {
         _;
     }
 
-    function Owned() internal {
+    function Ownable() internal {
         owner = msg.sender;
     }
 
@@ -87,10 +87,9 @@ contract Credit is Ownable, Destructible {
     bytes32 public description;
     
     bool public active = true;
-    bool public investmentActive = true;
-    bool public repaymentActive = false;
-    bool public interestReturnsActive = false;
-    
+    enum State { investment, repayment, interestReturns }
+    State state;
+
     mapping(address => bool) public lenders;
     mapping(address => uint) public lendersInvestedAmount;
 
@@ -110,20 +109,18 @@ contract Credit is Ownable, Destructible {
     }
     
     modifier canAskForInterest(){
-        require(interestReturnsActive == true);
+        require(state == State.interestReturns);
         require(lendersInvestedAmount[msg.sender] > 0);
         _;
     }
     
     modifier canInvest() {
-        require(investmentActive == true);
-        require(repaymentActive == false);
+        require(state == State.investment);
         _;
     }
     
     modifier canRepay() {
-        require(investmentActive == false);
-        require(repaymentActive == true);
+        require(state == State.repayment);
         _;
     }
     
@@ -132,8 +129,8 @@ contract Credit is Ownable, Destructible {
         _;
     }
 
-    function changeState(bool state) public onlyOwner {
-        active = state;
+    function pause(bool _active) public onlyOwner {
+        active = _active;
     }
 
     function Credit(uint _requestedAmount, uint _requestedRepayments, bytes32 _description) public {
@@ -149,7 +146,7 @@ contract Credit is Ownable, Destructible {
         requestedDate = now;
     }
     
-    function blance() public view returns(uint){
+    function getBalance() public view returns(uint256) {
         return this.balance;
     }
     
@@ -160,7 +157,7 @@ contract Credit is Ownable, Destructible {
             assert(requestedAmount == this.balance.sub(extraMoney));
             assert(extraMoney <= msg.value);
             tx.origin.transfer(extraMoney);
-            investmentActive = false;
+            state = State.repayment;
         }
         
         lenders[tx.origin] = true;
@@ -185,17 +182,16 @@ contract Credit is Ownable, Destructible {
         
         repaidAmount = repaidAmount.add(msg.value.sub(extraMoney));
         if (repaidAmount == returnAmount) {
-            repaymentActive = false;
-            interestReturnsActive = true;
+            state = State.interestReturns;
         }
     }
     
     function withdraw() public isActive onlyBorrower canWithdraw {
-        repaymentActive = true;
+        state = State.repayment;
         borrower.transfer(this.balance);
     }
     
-    function requrestInterest() public isActive onlyLender canAskForInterest {
+    function requestInterest() public isActive onlyLender canAskForInterest {
         assert(this.balance >= lendersInvestedAmount[msg.sender]);
         uint returnInterest = returnAmount.div(lendersInvestedAmount[msg.sender]);
         msg.sender.transfer(lendersInvestedAmount[msg.sender].mul(returnInterest));
