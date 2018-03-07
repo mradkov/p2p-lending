@@ -5,10 +5,18 @@ import './common/Ownable.sol';
 import './common/Destructible.sol';
 import './Credit.sol';
 
+/** @title Peer to peer lending contract.
+  * Inherits the Ownable and Destructible contracts.
+  */
 contract PeerToPeerLending is Ownable, Destructible {
-
+    
+    /** @dev Usings */
+    // Using SafeMath for our calculations with uints.
     using SafeMath for uint;
 
+    /** @dev State variables */
+
+    // User structure
     struct User {
         bool credited;
         address activeCredit;
@@ -19,8 +27,10 @@ contract PeerToPeerLending is Ownable, Destructible {
     
     address[] public credits;
 
-    event LogWithdraw(address indexed _address, uint indexed _amount, uint indexed _timestamp);
-    event LogInvestInCredit(address indexed _address, uint indexed _amount, uint indexed _timestamp, address _credit);
+    /** @dev Events */
+    event LogCreditCreated(address indexed _address, address indexed _borrower, uint indexed timestamp);
+
+    /** @dev Modifiers */
 
     function PeerToPeerLending() public {
 
@@ -34,6 +44,8 @@ contract PeerToPeerLending is Ownable, Destructible {
         users[msg.sender].credited = true;
         Credit credit = new Credit(requestedAmount, repaymentsCount, creditDescription);
         users[msg.sender].activeCredit = credit;
+
+        LogCreditCreated(credit, msg.sender, now);
         return credit;
     }
 }

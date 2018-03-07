@@ -117,9 +117,9 @@ contract Credit is Ownable, Destructible {
     }
   
     /** @dev Constructor.
-      * @param _requestedAmount - requested credit amount (in wei).
-      * @param _requestedRepayments - requested number of repayments.
-      * @param _description - credit description.
+      * @param _requestedAmount Requested credit amount (in wei).
+      * @param _requestedRepayments Requested number of repayments.
+      * @param _description Credit description.
       */
     function Credit(uint _requestedAmount, uint _requestedRepayments, bytes32 _description) public {
         
@@ -164,7 +164,7 @@ contract Credit is Ownable, Destructible {
     }
     
     /** @dev Get current balance.
-      * @returns this.balance.
+      * @return this.balance.
       */
     function getBalance() public view returns(uint256) {
         return this.balance;
@@ -299,17 +299,17 @@ contract Credit is Ownable, Destructible {
         // Calculate the interest.
         uint returnInterest = returnAmount.div(lendersInvestedAmount[msg.sender]);
 
-        // Calculate the amount to be returned.
-        uint returnAmount = lendersInvestedAmount[msg.sender].mul(returnInterest);
+        // Calculate the amount to be returned to lender.
+        uint lenderReturnAmount = lendersInvestedAmount[msg.sender].mul(returnInterest);
 
         // Assert the contract has enough balance to pay the lender. 
-        assert(this.balance >= returnAmount);
+        assert(this.balance >= lenderReturnAmount);
 
         // Transfer the return amount with interest to the lender.
-        msg.sender.transfer(returnAmount);
+        msg.sender.transfer(lenderReturnAmount);
 
         // Log the transfer to lender.
-        LogLenderWithdrawal(msg.sender, returnAmount, now);
+        LogLenderWithdrawal(msg.sender, lenderReturnAmount, now);
 
         // Check if the contract balance is drawned.
         if (this.balance == 0) {
@@ -323,7 +323,7 @@ contract Credit is Ownable, Destructible {
     }
 
     /** @dev Change state function.
-      * @params _state - new state.
+      * @param _state New state.
       * Only accessible to the owner of the contract.
       * Changes the state of the contract.
       */
