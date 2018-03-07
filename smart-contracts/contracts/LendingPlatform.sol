@@ -88,7 +88,7 @@ contract Credit is Ownable, Destructible {
     
     bool public active = true;
     enum State { investment, repayment, interestReturns }
-    State state;
+    State state = State.investment;
 
     mapping(address => bool) public lenders;
     mapping(address => uint) public lendersInvestedAmount;
@@ -108,7 +108,7 @@ contract Credit is Ownable, Destructible {
         _;
     }
     
-    modifier canAskForInterest(){
+    modifier canAskForInterest() {
         require(state == State.interestReturns);
         require(lendersInvestedAmount[msg.sender] > 0);
         _;
