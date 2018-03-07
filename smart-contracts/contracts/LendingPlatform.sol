@@ -73,17 +73,24 @@ contract Credit is Ownable, Destructible {
 
     address public borrower;
     uint public requestedAmount;
+    uint public returnAmount;
     uint public repaidAmount;
+    uint public interest;
 
     uint public requestedRepayments;
     uint public remainingRepayments;
+    uint public repaymentStep;
     
     uint public requestedDate;
     uint public lastRepaymentDate;
     
-    uint public interest;
-    string public description;
-    bool public active;
+    bytes32 public description;
+    
+    bool public active = true;
+    bool public investmentActive = true;
+    bool public repaymentActive = false;
+    bool public interestReturnsActive = false;
+    
     mapping(address => bool) public lenders;
     mapping(address => uint) public lendersInvestedAmount;
 
@@ -97,48 +104,101 @@ contract Credit is Ownable, Destructible {
         _;
     }
     
+    modifier onlyLender() {
+        require(lenders[msg.sender] == true);
+        _;
+    }
+    
+    modifier canAskForInterest(){
+        require(interestReturnsActive == true);
+        require(lendersInvestedAmount[msg.sender] > 0);
+        _;
+    }
+    
+    modifier canInvest() {
+        require(investmentActive == true);
+        require(repaymentActive == false);
+        _;
+    }
+    
+    modifier canRepay() {
+        require(investmentActive == false);
+        require(repaymentActive == true);
+        _;
+    }
+    
     modifier canWithdraw() {
         require(this.balance >= requestedAmount);
         _;
     }
 
-    function remove() public onlyOwner {
-        borrower = 0;
+    function changeState(bool state) public onlyOwner {
+        active = state;
     }
 
-    function Credit(address _borrower, uint _requestedAmount, uint _requestedRepayments, string _description) public {
-        borrower = _borrower;
+    function Credit(uint _requestedAmount, uint _requestedRepayments, bytes32 _description) public {
+        borrower = tx.origin;
+        interest = 5000;
         requestedAmount = _requestedAmount;
         requestedRepayments = _requestedRepayments;
         remainingRepayments = _requestedRepayments;
-        active = true;
+        returnAmount = requestedAmount.add(interest);
+        repaymentStep = returnAmount.div(requestedRepayments);
+
         description = _description;
-        requestedDate = now; 
+        requestedDate = now;
     }
     
-    function invest() public payable {
-        require(this.balance < requestedAmount);
-        uint extraMoney;
-        if (msg.value + this.balance > requestedAmount) {
-            extraMoney = requestedAmount - msg.value - this.balance;
-            assert(requestedAmount == this.balance + msg.value - extraMoney);
+    function blance() public view returns(uint){
+        return this.balance;
+    }
+    
+    function invest() public canInvest payable {
+        uint extraMoney = 0;
+        if (this.balance >= requestedAmount) {
+            extraMoney = this.balance.sub(requestedAmount);
+            assert(requestedAmount == this.balance.sub(extraMoney));
+            assert(extraMoney <= msg.value);
             tx.origin.transfer(extraMoney);
+            investmentActive = false;
         }
         
         lenders[tx.origin] = true;
-        lendersInvestedAmount[tx.origin] = msg.value - extraMoney;
+        lendersInvestedAmount[tx.origin] = lendersInvestedAmount[tx.origin].add(msg.value.sub(extraMoney));
+        
     }
     
     //repayment
-    function repay() public onlyBorrower payable {
+    function repay() public onlyBorrower canRepay payable {
+        require(remainingRepayments > 0);
+        require(msg.value >= repaymentStep);
+        assert(repaidAmount < returnAmount);
         remainingRepayments--;
         lastRepaymentDate = now;
-        repaidAmount = repaidAmount.add(msg.value);
+        uint extraMoney = 0;
+        if (msg.value > repaymentStep) {
+            extraMoney = msg.value.sub(repaymentStep);
+            assert(repaymentStep == msg.value.sub(extraMoney));
+            assert(extraMoney <= msg.value);
+            tx.origin.transfer(extraMoney);
+        }
+        
+        repaidAmount = repaidAmount.add(msg.value.sub(extraMoney));
+        if (repaidAmount == returnAmount) {
+            repaymentActive = false;
+            interestReturnsActive = true;
+        }
     }
     
-    function withdraw(uint amount) public isActive onlyBorrower canWithdraw {
-        require(this.balance >= amount);
-        borrower.transfer(amount);
+    function withdraw() public isActive onlyBorrower canWithdraw {
+        repaymentActive = true;
+        borrower.transfer(this.balance);
+    }
+    
+    function requrestInterest() public isActive onlyLender canAskForInterest {
+        assert(this.balance >= lendersInvestedAmount[msg.sender]);
+        uint returnInterest = returnAmount.div(lendersInvestedAmount[msg.sender]);
+        msg.sender.transfer(lendersInvestedAmount[msg.sender].mul(returnInterest));
     }
 
 }
@@ -165,13 +225,13 @@ contract PeerToPeerLending is Ownable, Destructible {
 
     }
 
-    function applyForCredit(uint requestedAmount, uint repaymentsCount, string creditDescription) public returns(address) {
+    function applyForCredit(uint requestedAmount, uint repaymentsCount, bytes32 creditDescription) public returns(address) {
         // The person should not have active credits;
         require(users[msg.sender].credited == false);
         assert(users[msg.sender].activeCredit == 0);
 
         users[msg.sender].credited = true;
-        Credit credit = new Credit(msg.sender, requestedAmount, repaymentsCount, creditDescription);
+        Credit credit = new Credit(requestedAmount, repaymentsCount, creditDescription);
         users[msg.sender].activeCredit = credit;
         return credit;
     }
