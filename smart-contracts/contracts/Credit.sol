@@ -1,71 +1,8 @@
 pragma solidity ^0.4.18;
 
-
-library SafeMath {
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-        if (a == 0) {
-            return 0;
-        }
-        uint256 c = a * b;
-        assert(c / a == b);
-        return c;
-    }
-
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        //there is no case where this function can overflow/underflow
-        uint256 c = a / b;
-        return c;
-    }
-    
-    
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        assert(b <= a);
-        return a - b;
-    }
-    
-    
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        assert(c >= a);
-        return c;
-    }
-}
-
-
-contract Ownable {
-    address owner;
-
-    event LogOwnershipTransfered(address indexed _currentOwner, address indexed _newOwner);
-
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
-
-    function Ownable() internal {
-        owner = msg.sender;
-    }
-
-    // @dev - The ownership shouldn't be transferrable. Otherwise it will mess up the members logic.
-    /* function transferOwnership(address _newOwner) public onlyOwner {
-         owner = _newOwner;
-         LogOwnershipTransfered(msg.sender, _newOwner);
-     } */
-}
-
-
-contract Destructible is Ownable {
-    
-    function Destructible() public payable { }
-
-    function destroy() public onlyOwner {
-        selfdestruct(owner);
-    }
-    
-    function destroyAndSend(address _recipient) public onlyOwner {
-        selfdestruct(_recipient);
-    }
-}
+import './common/SafeMath.sol';
+import './common/Ownable.sol';
+import './common/Destructible.sol';
 
 /** @title Credit contract.
   * Inherits the Ownable and Destructible contracts.
@@ -402,38 +339,4 @@ contract Credit is Ownable, Destructible {
         active = !active;
     }
 
-}
-
-
-contract PeerToPeerLending is Ownable, Destructible {
-
-    using SafeMath for uint;
-
-    struct User {
-        bool credited;
-        address activeCredit;
-        mapping(address => uint) invested;
-    }
-
-    mapping(address => User) users;
-    
-    address[] public credits;
-
-    event LogWithdraw(address indexed _address, uint indexed _amount, uint indexed _timestamp);
-    event LogInvestInCredit(address indexed _address, uint indexed _amount, uint indexed _timestamp, address _credit);
-
-    function PeerToPeerLending() public {
-
-    }
-
-    function applyForCredit(uint requestedAmount, uint repaymentsCount, bytes32 creditDescription) public returns(address) {
-        // The person should not have active credits;
-        require(users[msg.sender].credited == false);
-        assert(users[msg.sender].activeCredit == 0);
-
-        users[msg.sender].credited = true;
-        Credit credit = new Credit(requestedAmount, repaymentsCount, creditDescription);
-        users[msg.sender].activeCredit = credit;
-        return credit;
-    }
 }
