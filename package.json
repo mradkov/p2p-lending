@@ -17,7 +17,6 @@
     "express": "4.15.3",
     "express-handlebars": "3.0.0",
     "express-session": "1.15.3",
-    "handlebars-helpers": "0.8.2",
-    "moment": "2.18.1"
+    "handlebars-helpers": "0.8.2"
   }
 }
