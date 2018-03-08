@@ -43,45 +43,48 @@ $(document).ready(function() {
                }
 
                 $('#activeCredits')
-                    .append(`<div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">${creditContractInfo.description}</h5>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text">
-                                    <span class="credit-description-property">Address:</span> ${creditContractInfo.address}
-                                </p>
-                                <p class="card-text">
-                                    <span class="credit-description-property">Borrower:</span> <a class="text-primary" href="/check?address=${creditContractInfo.borrower}" >${creditContractInfo.borrower}</a>
-                                </p>
-                                <p class="card-text">
-                                    <span class="credit-description-property">Requested:</span> ${web3.fromWei(creditContractInfo.requestedAmount, "ether")} ETH
-                                </p>
-                                <p class="card-text">
-                                    <span class="credit-description-property">Funded:</span> ${web3.fromWei(creditContractInfo.balance, "ether")} ETH
-                                </p>
-                                <p class="card-text">
-                                    <span class="credit-description-property">Installments Count:</span> ${creditContractInfo.requestedRepayments}
-                                </p>
-                                <p class="card-text">
-                                    <span class="credit-description-property">Interest:</span> ${web3.fromWei(creditContractInfo.interest, "ether")} ETH
-                                </p>
-                            </div>
-                            <div class="card-footer">
-                                <div class="input-group mb-3 investment-card">
-                                  <input type="number" class="form-control" name="amount" placeholder="Amount" aria-label="Amount" aria-describedby="basic-addon2">
-                                  <div class="input-group-append">
-                                    <button class="btn btn-outline-success" type="button" name="invest" data-contract-address="${creditContractInfo.address}">Invest</button>
-                                  </div>
+                    .append(`<div class="col-sm-6 mt-5">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">${creditContractInfo.description}</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Address:</span> ${creditContractInfo.address}
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Borrower:</span> <a class="text-primary" href="/check?address=${creditContractInfo.borrower}" >${creditContractInfo.borrower}</a>
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Requested:</span> ${web3.fromWei(creditContractInfo.requestedAmount, "ether")} ETH
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Funded:</span> ${web3.fromWei(creditContractInfo.balance, "ether")} ETH
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Installments Count:</span> ${creditContractInfo.requestedRepayments}
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Interest:</span> ${web3.fromWei(creditContractInfo.interest, "ether")} ETH
+                                        </p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="input-group mb-3 investment-card">
+                                          <input type="number" class="form-control" name="amount" placeholder="Amount" aria-label="Amount" aria-describedby="basic-addon2">
+                                          <div class="input-group-append">
+                                            <button class="btn btn-outline-success" type="button" name="invest" data-contract-address="${creditContractInfo.address}">Invest</button>
+                                          </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-info" name="requestInterest" data-contract-address="${creditContractInfo.address}">Get interest</button>
+                                            <button type="button" class="btn btn-warning" name="revokeVote" data-contract-address="${creditContractInfo.address}">Revoke vote</button>
+                                            <button type="button" class="btn btn-warning" name="refund" data-contract-address="${creditContractInfo.address}">Refund</button>
+                                            <button type="button" class="btn btn-danger" name="fraudVote" data-contract-address="${creditContractInfo.address}">Fraud</button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="mb-3">
-                                    <button type="button" class="btn btn-info" name="requestInterest" data-contract-address="${creditContractInfo.address}">Get interest</button>
-                                    <button type="button" class="btn btn-warning" name="revokeVote" data-contract-address="${creditContractInfo.address}">Revoke vote</button>
-                                    <button type="button" class="btn btn-warning" name="refund" data-contract-address="${creditContractInfo.address}">Refund</button>
-                                    <button type="button" class="btn btn-danger" name="fraudVote" data-contract-address="${creditContractInfo.address}">Fraud</button>
-                                </div>
                             </div>
-                        </div>`)
+                            `)
             })
         })
     });
@@ -90,22 +93,46 @@ $(document).ready(function() {
         e.preventDefault();
         let address = $(this).attr('data-contract-address');
         let amount = $(this).closest('div.investment-card').find('input').val();
+        let selectedCreditContract = web3.eth.contract(creditContractABI).at(address);
+        let getData = selectedCreditContract.invest.getData();
 
         if (amount < 0 || amount == "" || amount == "undefined"){
-            alert("Please fill the amount field!");
+            swal({
+                type: 'error',
+                title: 'Oops...',
+                text: 'Amount is missing!',
+            })
             return;
         }
 
-        let selectedCreditContract = web3.eth.contract(creditContractABI).at(address);
-        let getData = selectedCreditContract.invest.getData();
-        web3.eth.sendTransaction({from: web3.eth.coinbase, to: address, data: getData, value:web3.toWei(amount, "ether")}, function (err, result) {
-            if (err){
-                console.log(err);
-                return;
-            }
+        swal({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, invest!'
+        }).then((result) => {
+            if (result.value) {
+                web3.eth.sendTransaction({from: web3.eth.coinbase, to: address, data: getData, value:web3.toWei(amount, "ether")}, function (err, result) {
+                    if (err){
+                        console.log(err);
+                        return;
+                    }
 
-            console.log(result);
+                    swal(
+                        'Invested!',
+                        'Your investment was sent.',
+                        'success'
+                    )
+                    console.log(result);
+                })
+            }
         })
+
+
+
     });
 
     $('body').on('click', 'button[name="requestInterest"]', function (e) {
@@ -165,18 +192,35 @@ $(document).ready(function() {
     $('body').on('click', 'button[name="fraudVote"]', function (e) {
         e.preventDefault();
         let address = $(this).attr('data-contract-address');
+        let selectedCreditContract = web3.eth.contract(creditContractABI).at(address);
+        let getData = selectedCreditContract.fraudVote.getData();
 
         console.log('fraud vote ' + address);
 
-        let selectedCreditContract = web3.eth.contract(creditContractABI).at(address);
-        let getData = selectedCreditContract.fraudVote.getData();
-        web3.eth.sendTransaction({from: web3.eth.coinbase, to: address, data: getData}, function (err, result) {
-            if (err){
-                console.log(err);
-                return;
-            }
+        swal({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, vote!'
+        }).then((result) => {
+            if (result.value) {
+                web3.eth.sendTransaction({from: web3.eth.coinbase, to: address, data: getData}, function (err, result) {
+                    if (err){
+                        console.log(err);
+                        return;
+                    }
 
-            console.log(result);
+                    swal(
+                        'Voted!',
+                        'Your vote was saved.',
+                        'success'
+                    )
+                    console.log(result);
+                })
+            }
         })
     });
 
@@ -192,7 +236,9 @@ $(document).ready(function() {
                 return showError("Smart contract call failed: " + e);
 
             web3.eth.getTransactionReceipt(result, (err, result) => {
+
                 showInfo(`Credit successfully requested. TxHash: ${result}`);
+                    location.reload();
             });
         });
     });
@@ -210,7 +256,7 @@ $(document).ready(function() {
             }
 
             console.log(result);
-            
+
             let user = {
                 credited: result[0],
                 lastCredit: result[1],
@@ -252,6 +298,9 @@ $(document).ready(function() {
     }
     else if (top.location.pathname === "/profile") {
         console.log('profile');
+
+
+
     }
     else if (top.location.pathname === "/check") {
         let address = getUrlParameter('address');
@@ -285,11 +334,30 @@ $(document).ready(function() {
         ajaxStop: function() { $("#loadingBox").hide() }
     });
 
+    function showSuccess(message) {
+        swal({
+            type: 'success',
+            title: message,
+            showConfirmButton: false,
+            timer: 1500
+        })
+    }
+
     function showInfo(message) {
+        swal(
+            'Info?',
+            message,
+            'question'
+        )
         console.log(message);
     }
     //
     function showError(errorMsg) {
+        swal({
+            type: 'error',
+            title: 'Oops...',
+            text: errorMsg,
+        })
         console.log(errorMsg);
     }
 
