@@ -192,8 +192,7 @@ $(document).ready(function() {
                 return showError("Smart contract call failed: " + e);
 
             web3.eth.getTransactionReceipt(result, (err, result) => {
-                console.log(result);
-                showInfo(`Credit successfully added. TxHash: ${result}`);
+                showInfo(`Credit successfully requested. TxHash: ${result}`);
             });
         });
     });
@@ -203,9 +202,53 @@ $(document).ready(function() {
         console.log('lend');
     }
     else if (top.location.pathname === "/borrow") {
+        peerToPeerLendingContractInstance.users(web3.eth.coinbase, function(err, result) {
+            if (err) {
+                console.log(err);
+                alert(err);
+                return;
+            }
 
-        console.log('borrow');
+            console.log(result);
+            
+            let user = {
+                credited: result[0],
+                lastCredit: result[1],
+                fraudStatus: result[2]
+            }
 
+            if (user.credited == true){
+                $('#borrowContent')
+                    .append(`
+                        <div class="col-sm-8 offset-sm-2 alert-info">
+                            <p>You cannot request another credit until you repay the last one!</p>
+                        </div>
+                `)
+            }
+            else {
+                $('#borrowContent')
+                    .append(`
+                        <form id="borrowRequest">
+                            <h1 class="text-center">Borrow request</h1>
+                            <div class="form-group">
+                                <label for="inputAddress">Description</label>
+                                <input type="text" class="form-control" name="creditDescription" placeholder="Why do you need the money?" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="inputEmail4">Requested Amount:</label>
+                                    <input type="number" class="form-control" name="creditRequestedAmount" placeholder="e.g. 0.01 ETH" required>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="inputPassword4">Installments count:</label>
+                                    <input type="number" class="form-control" name="creditRequestedInstallmentsCount" placeholder="e.g. 2" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg btn-block">Ask for funding</button>
+                        </form>
+                `)
+            }
+        })
     }
     else if (top.location.pathname === "/profile") {
         console.log('profile');
@@ -227,10 +270,10 @@ $(document).ready(function() {
             }
 
             $('#checkContent')
-                .append(`<div class="col-sm-8 offset-sm-2 alert-danger">
-                            <p>Credited: ${user.credited} </p>
+                .append(`<div class="col-sm-8 offset-sm-2 ${user.fraudStatus == true ? "alert-danger" : "alert-success"}">
+                            <p>Credited: ${user.credited == true ? "Yes" : "No"} </p>
                             <p>Last credit: ${user.lastCredit} </p>
-                            <p>Fraud status: ${user.fraudStatus} </p>
+                            <p>Fraud status: ${user.fraudStatus == true ? "Fraudlent" : "Good"} </p>
                         </div>`)
         })
     }
