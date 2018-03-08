@@ -7,46 +7,47 @@ import './common/Destructible.sol';
   * Inherits the Ownable and Destructible contracts.
   */
 contract Credit is Destructible {
+
     /** @dev Usings */
     // Using SafeMath for our calculations with uints.
     using SafeMath for uint;
 
     /** @dev State variables */
     // Borrower is the person who generated the credit contract.
-    address public borrower;
+    address borrower;
 
     // Amount requested to be funded (in wei).
-    uint public requestedAmount;
+    uint requestedAmount;
 
     // Amount that will be returned by the borrower (including the interest).
-    uint public returnAmount;
+    uint returnAmount;
 
     // Currently repaid amount.
-    uint public repaidAmount;
+    uint repaidAmount;
 
     // Credit interest.
-    uint public interest;
+    uint interest;
 
     // Requested number of repayment installments.
-    uint public requestedRepayments;
+    uint requestedRepayments;
 
     // Remaining repayment installments.
-    uint public remainingRepayments;
+    uint remainingRepayments;
 
     // The value of the repayment installment.
-    uint public repaymentInstallment;
-    
+    uint repaymentInstallment;
+
     // The timestamp of credit creation.
-    uint public requestedDate;
+    uint requestedDate;
 
     // The timestamp of last repayment date.
-    uint public lastRepaymentDate;
-    
+    uint lastRepaymentDate;
+
     // Description of the credit.
-    bytes32 public description;
-    
+    bytes32 description;
+
     // Active state of the credit.
-    bool public active = true;
+    bool active = true;
 
     /** Stages that every credit contract gets trough.
       *   investment - During this state only investments are allowed.
@@ -54,26 +55,51 @@ contract Credit is Destructible {
       *   interestReturns - This stage gives investors opportunity to requeste their returns.
       *   expired - This is the stage when the contract is finished its purpose.
     */
-    enum State { investment, repayment, interestReturns, expired }
+    enum State { investment, repayment, interestReturns, expired, revoked }
     State state;
 
     // Storing the lenders for this credit.
     mapping(address => bool) public lenders;
 
     // Storing the invested amount by each lender.
-    mapping(address => uint) public lendersInvestedAmount;
+    mapping(address => uint) lendersInvestedAmount;
+
+    // Store the lenders count, later needed for revoke vote.
+    uint lendersCount = 0;
+
+    // Revoke votes count.
+    uint revokeVotes = 0;
+
+    // Revoke voters.
+    mapping(address => bool) revokeVoters;
+
+    // Time needed for a revoke voting to start.
+    uint revokeTimeNeeded = now + 1 days;
+
+    // Revoke votes count.
+    uint fraudVotes = 0;
+
+    // Revoke voters.
+    mapping(address => bool) fraudVoters;
+
 
     /** @dev Events
     *
     */
     event LogCreditInitialized(address indexed _address, uint indexed timestamp);
-    event LogBorrowerWithdrawal(address indexed _address, uint indexed _amount, uint indexed timestamp);    
-    event LogBorrowerRepaymentInstallment(address indexed _address, uint indexed _amount, uint indexed timestamp);    
-    event LogBorrowerRepaymentFinished(address indexed _address, uint indexed _amount, uint indexed timestamp);    
-    event LogBorrowerChangeReturned(address indexed _address, uint indexed _amount, uint indexed timestamp);    
+    event LogCreditRevoked(uint indexed timestamp);
+
+    event LogBorrowerWithdrawal(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event LogBorrowerRepaymentInstallment(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event LogBorrowerRepaymentFinished(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event LogBorrowerChangeReturned(address indexed _address, uint indexed _amount, uint indexed timestamp);
+
     event LogLenderInvestment(address indexed _address, uint indexed _amount, uint indexed timestamp);
     event LogLenderWithdrawal(address indexed _address, uint indexed _amount, uint indexed timestamp);
     event LogLenderChangeReturned(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event LogLenderVoteForRevoking(address indexed _address, uint indexed timestamp);
+    event LogLenderVoteForFraud(address indexed _address, uint indexed timestamp);
+    event LogLenderRefunded(address indexed _address, uint indexed _amount, uint indexed timestamp);
 
     /** @dev Modifiers
     *
@@ -82,45 +108,56 @@ contract Credit is Destructible {
         require(active == true);
         _;
     }
-    
+
     modifier onlyBorrower() {
         require(msg.sender == borrower);
         _;
     }
-    
+
     modifier onlyLender() {
         require(lenders[msg.sender] == true);
         _;
     }
-    
+
     modifier canAskForInterest() {
         require(state == State.interestReturns);
         require(lendersInvestedAmount[msg.sender] > 0);
         _;
     }
-    
+
     modifier canInvest() {
         require(state == State.investment);
         _;
     }
-    
+
     modifier canRepay() {
         require(state == State.repayment);
         _;
     }
-    
+
     modifier canWithdraw() {
         require(this.balance >= requestedAmount);
         _;
     }
-  
+
+    modifier isRevokable() {
+        require(now >= revokeTimeNeeded);
+        require(state == State.investment);
+        _;
+    }
+
+    modifier isRevoked() {
+        require(state == State.revoked);
+        _;
+    }
+
     /** @dev Constructor.
       * @param _requestedAmount Requested credit amount (in wei).
       * @param _requestedRepayments Requested number of repayments.
       * @param _description Credit description.
       */
     function Credit(uint _requestedAmount, uint _requestedRepayments, bytes32 _description) public {
-        
+
         /** Set the borrower of the contract to the tx.origin
           * We are using tx.origin, because the contract is going to be published
           * by the main contract and msg.sender will break our logic.
@@ -137,7 +174,7 @@ contract Credit is Destructible {
         requestedRepayments = _requestedRepayments;
 
         /** Set the remaining repayments.
-          * Initially this is equal to the requested repayments.        
+          * Initially this is equal to the requested repayments.
           */
         remainingRepayments = _requestedRepayments;
 
@@ -160,25 +197,25 @@ contract Credit is Destructible {
         // Log credit initialization.
         LogCreditInitialized(borrower, now);
     }
-    
+
     /** @dev Get current balance.
       * @return this.balance.
       */
     function getBalance() public view returns(uint256) {
         return this.balance;
     }
-    
+
     /** @dev Invest function.
       * Provides functionality for person to invest in someone's credit,
       * incentivised by the return of interest.
-      */  
+      */
     function invest() public canInvest payable {
         // Initialize an memory variable for the extra money that may have been sent.
         uint extraMoney = 0;
 
         // Check if contract balance is reached the requested amount.
         if (this.balance >= requestedAmount) {
-            
+
             // Calculate the extra money that may have been sent.
             extraMoney = this.balance.sub(requestedAmount);
 
@@ -196,15 +233,18 @@ contract Credit is Destructible {
                 // Log change returned.
                 LogLenderChangeReturned(msg.sender, extraMoney, now);
             }
-            
+
             // Set the contract state to repayment.
             state = State.repayment;
         }
-        
+
         /** Add the investor to the lenders mapping.
           * So that we know he invested in this contract.
           */
         lenders[msg.sender] = true;
+
+        // Increment the lenders count.
+        lendersCount++;
 
         // Add the amount invested to the amount mapping.
         lendersInvestedAmount[msg.sender] = lendersInvestedAmount[msg.sender].add(msg.value.sub(extraMoney));
@@ -212,25 +252,26 @@ contract Credit is Destructible {
         // Log lender invested amount.
         LogLenderInvestment(msg.sender, msg.value.sub(extraMoney), now);
     }
-    
+
     /** @dev Repayment function.
       * Allows borrower to make repayment installments.
       */
     function repay() public onlyBorrower canRepay payable {
         // The remaining repayments should be greater than 0 to continue.
         require(remainingRepayments > 0);
+
         // The value sent should be greater than the repayment installment.
         require(msg.value >= repaymentInstallment);
-        
+
         /** Assert that the amount to be returned is greater
-          * than the sum of repayments made until now. 
+          * than the sum of repayments made until now.
           * Otherwise the credit is already repaid.
           */
         assert(repaidAmount < returnAmount);
-       
+
         // Decrement the remaining repayments.
         remainingRepayments--;
-        
+
         // Update last repayment date.
         lastRepaymentDate = now;
 
@@ -239,7 +280,7 @@ contract Credit is Destructible {
 
         /** Check if the value (in wei) that is being sent is greather than the repayment installment.
           * In this case we should return the change to the msg.sender.
-          */        
+          */
         if (msg.value > repaymentInstallment) {
 
             // Calculate the extra money being sent in the transaction.
@@ -257,24 +298,25 @@ contract Credit is Destructible {
             // Log the return of the extra money.
             LogBorrowerChangeReturned(msg.sender, extraMoney, now);
         }
-        
+
         // Add the repayment installment amount to the total repaid amount.
         repaidAmount = repaidAmount.add(msg.value.sub(extraMoney));
 
         // Check the repaid amount reached the amount to be returned.
         if (repaidAmount == returnAmount) {
+
             // Set the credit state to "returning interests".
             state = State.interestReturns;
         }
     }
-    
+
     /** @dev Withdraw function.
       * It can only be executed while contract is in active state.
       * It is only accessible to the borrower.
       * It is only accessible if the needed amount is gathered in the contract.
       * It can only be executed once.
       * Transfers the gathered amount to the borrower.
-      */ 
+      */
     function withdraw() public isActive onlyBorrower canWithdraw {
         // Set the state to repayment so we can avoid reentrancy.
         state = State.repayment;
@@ -282,14 +324,14 @@ contract Credit is Destructible {
         // Transfer the gathered amount to the credit borrower.
         borrower.transfer(this.balance);
     }
-    
+
     /** @dev Request interest function.
       * It can only be executed while contract is in active state.
       * It is only accessible to lenders.
       * It is only accessible if lender funded 1 or more wei.
       * It can only be executed once.
       * Transfers the lended amount + interest to the lender.
-      */ 
+      */
     function requestInterest() public isActive onlyLender canAskForInterest {
 
         // Calculate the interest.
@@ -298,7 +340,7 @@ contract Credit is Destructible {
         // Calculate the amount to be returned to lender.
         uint lenderReturnAmount = lendersInvestedAmount[msg.sender].mul(returnInterest);
 
-        // Assert the contract has enough balance to pay the lender. 
+        // Assert the contract has enough balance to pay the lender.
         assert(this.balance >= lenderReturnAmount);
 
         // Transfer the return amount with interest to the lender.
@@ -316,6 +358,97 @@ contract Credit is Destructible {
             // Set the contract stage to expired e.g. its lifespan is over.
             state = State.expired;
         }
+    }
+
+    /** @dev Function to get the whole credit information.
+      * @return borrower
+      * @return description
+      * @return requestedAmount
+      * @return requestedRepayments
+      * @return remainingRepayments
+      * @return interest
+      * @return returnAmount
+      * @return state
+      * @return active
+      * @return this.balance
+      */
+    function getCreditInfo() public view returns(address, bytes32, uint, uint, uint, uint, uint, uint, State, bool, uint) {
+        return (
+            borrower,
+            description,
+            requestedAmount,
+            requestedRepayments,
+            repaymentInstallment,
+            remainingRepayments,
+            interest,
+            returnAmount,
+            state,
+            active,
+            this.balance
+            );
+    }
+
+    /** @dev Function for revoking the credit.
+      */
+    function revokeVote() public isActive isRevokable onlyLender returns(bool) {
+        require(revokeVoters[msg.sender] == false);
+        revokeVotes++;
+
+        revokeVoters[msg.sender] == true;
+        LogLenderVoteForRevoking(msg.sender, now);
+
+        if (lendersCount == revokeVotes) {
+            revoke();
+        }
+        return true;
+    }
+
+    /** @dev Revoke internal function.
+      */
+    function revoke() internal {
+        state = State.revoked;
+        LogCreditRevoked(now);
+    }
+
+    /** @dev Function for refunding people. */
+    function refund() public isActive onlyLender isRevoked {
+        // assert the contract have enough balance.
+        assert(this.balance >= lendersInvestedAmount[msg.sender]);
+
+        // Transfer the return amount with interest to the lender.
+        msg.sender.transfer(lendersInvestedAmount[msg.sender]);
+
+        // Log the transfer to lender.
+        LogLenderRefunded(msg.sender, lendersInvestedAmount[msg.sender], now);
+
+        // Check if the contract balance is drawned.
+        if (this.balance == 0) {
+
+            // Set the active state to false.
+            active = false;
+
+            // Set the contract stage to expired e.g. its lifespan is over.
+            state = State.expired;
+        }
+    }
+
+    /** @dev Function for voting the borrower as fraudster.
+     */
+    function fraudVote() public isActive onlyLender returns(bool) {
+        require(fraudVoters[msg.sender] == false);
+        fraudVotes++;
+
+        fraudVoters[msg.sender] == true;
+        LogLenderVoteForFraud(msg.sender, now);
+
+        if (lendersCount == fraudVotes) {
+            fraud();
+        }
+        return true;
+    }
+
+    function fraud() internal {
+        owner.call(bytes4(keccak256("setFraudStatus(address)")), borrower);
     }
 
     /** @dev Change state function.
