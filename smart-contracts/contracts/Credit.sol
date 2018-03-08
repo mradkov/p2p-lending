@@ -1,14 +1,12 @@
 pragma solidity ^0.4.18;
 
 import './common/SafeMath.sol';
-import './common/Ownable.sol';
 import './common/Destructible.sol';
 
 /** @title Credit contract.
   * Inherits the Ownable and Destructible contracts.
   */
-contract Credit is Ownable, Destructible {
-    
+contract Credit is Destructible {
     /** @dev Usings */
     // Using SafeMath for our calculations with uints.
     using SafeMath for uint;
@@ -221,7 +219,6 @@ contract Credit is Ownable, Destructible {
     function repay() public onlyBorrower canRepay payable {
         // The remaining repayments should be greater than 0 to continue.
         require(remainingRepayments > 0);
-
         // The value sent should be greater than the repayment installment.
         require(msg.value >= repaymentInstallment);
         
@@ -266,7 +263,6 @@ contract Credit is Ownable, Destructible {
 
         // Check the repaid amount reached the amount to be returned.
         if (repaidAmount == returnAmount) {
-            
             // Set the credit state to "returning interests".
             state = State.interestReturns;
         }
