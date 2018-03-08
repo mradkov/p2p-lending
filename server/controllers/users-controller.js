@@ -10,5 +10,8 @@ module.exports = {
     },
     profile: (req, res) => {
         res.render('users/profile')
+    },
+    checkAddress: (req, res) => {
+        res.render('users/check', {address: req.query.address})
     }
 }
