@@ -19,7 +19,6 @@ $(document).ready(function() {
 
         result.forEach(function(index){
             let creditAddress = index;
-
             let creditContract = web3.eth.contract(creditContractABI).at(creditAddress);
 
             creditContract.getCreditInfo(function(err, info) {
@@ -86,8 +85,27 @@ $(document).ready(function() {
                             </div>
                             `)
             })
+
+
         })
     });
+
+
+    var filter = web3.eth.filter("latest");
+
+    // watch for changes
+    filter.watch(function(error, result){
+        if (!error)
+
+        web3.eth.getBlock(result, function(error, result){
+            result.transactions.forEach(function(index) {
+                web3.eth.getTransactionReceipt(index, function(error, result) {
+                    console.log(result);
+                })
+            })
+        })
+    });
+
 
     $('body').on('click', 'button[name="invest"]', function (e) {
         e.preventDefault();
@@ -126,7 +144,7 @@ $(document).ready(function() {
                         'Your investment was sent.',
                         'success'
                     )
-                    console.log(result);
+                    console.log("tx.hash: "+result);
                 })
             }
         })
@@ -237,8 +255,8 @@ $(document).ready(function() {
 
             web3.eth.getTransactionReceipt(result, (err, result) => {
 
+                console.log(result);
                 showInfo(`Credit successfully requested. TxHash: ${result}`);
-                    location.reload();
             });
         });
     });
