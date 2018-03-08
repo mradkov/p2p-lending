@@ -1,25 +1,3 @@
-body {
-    padding-top: 5rem;
-}
-
-.sender {
-    padding: 5px; 
-    background: #dddddd;
-    width: 300px;
-    border-radius: 25px;
-}
-
-.reciever {
-    padding: 5px; 
-    background: #5bc0de;
-    width: 300px;
-    border-radius: 25px;
-}
-
-.heart {
-    background-image: url(../images/heart.png);
-    height: 16px;
-    width: 16px;
-    display: inherit;
-    margin-left: 45%;
+.credit-description-property {
+    font-weight: bolder;
 }
