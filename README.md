@@ -33,7 +33,7 @@ $ truffle complie
 $ truffle migrate --reset --network development --verbose-rpc
 ```
 
-3. Set the ``PeerToPeerLending`` contract newly published address in the ``client-app/public/js/contract_interaction.js LINE:3`` 
+3. Set the ``PeerToPeerLending`` contract newly published address in the [client-app/public/js/contract_interaction.js LINE:3](https://github.com/mradkov/p2p-lending/blob/370bde2a452caff4831d5e91157f733ce9921a99/client-app/public/js/contract_interaction.js#L5) 
 
 4. Install the dependencies and devDependencies and start the server.
 
@@ -48,11 +48,6 @@ $ npm start
 ### Development
 
 Want to contribute? Great!
-
-### Todos
-
- - MetaMask integration
- - Solidity Smart Contract test
 
 License
 ----
