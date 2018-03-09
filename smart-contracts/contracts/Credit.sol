@@ -52,7 +52,7 @@ contract Credit is Destructible {
     /** Stages that every credit contract gets trough.
       *   investment - During this state only investments are allowed.
       *   repayment - During this stage only repayments are allowed.
-      *   interestReturns - This stage gives investors opportunity to requeste their returns.
+      *   interestReturns - This stage gives investors opportunity to request their returns.
       *   expired - This is the stage when the contract is finished its purpose.
     */
     enum State { investment, repayment, interestReturns, expired, revoked }
