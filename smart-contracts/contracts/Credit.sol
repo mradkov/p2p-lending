@@ -54,8 +54,9 @@ contract Credit is Destructible {
       *   repayment - During this stage only repayments are allowed.
       *   interestReturns - This stage gives investors opportunity to request their returns.
       *   expired - This is the stage when the contract is finished its purpose.
+      *   fraud - The borrower was marked as fraud.
     */
-    enum State { investment, repayment, interestReturns, expired, revoked }
+    enum State { investment, repayment, interestReturns, expired, revoked, fraud }
     State state;
 
     // Storing the lenders for this credit.
@@ -74,7 +75,8 @@ contract Credit is Destructible {
     mapping(address => bool) revokeVoters;
 
     // Time needed for a revoke voting to start.
-    uint revokeTimeNeeded = now + 1 days;
+    // To be changed in production accordingly.
+    uint revokeTimeNeeded = now + 1 minutes;
 
     // Revoke votes count.
     uint fraudVotes = 0;
@@ -87,12 +89,14 @@ contract Credit is Destructible {
     *
     */
     event LogCreditInitialized(address indexed _address, uint indexed timestamp);
-    event LogCreditRevoked(uint indexed timestamp);
+    event LogCreditStateChanged(uint indexed state, uint indexed timestamp);
+    event LogCreditStateActiveChanged(uint indexed active);
 
     event LogBorrowerWithdrawal(address indexed _address, uint indexed _amount, uint indexed timestamp);
     event LogBorrowerRepaymentInstallment(address indexed _address, uint indexed _amount, uint indexed timestamp);
-    event LogBorrowerRepaymentFinished(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event LogBorrowerRepaymentFinished(address indexed _address, uint indexed timestamp);
     event LogBorrowerChangeReturned(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event LogBorrowerIsFraud(address indexed _address, bool indexed fraudStatus, uint indexed timestamp);
 
     event LogLenderInvestment(address indexed _address, uint indexed _amount, uint indexed timestamp);
     event LogLenderWithdrawal(address indexed _address, uint indexed _amount, uint indexed timestamp);
@@ -137,6 +141,11 @@ contract Credit is Destructible {
 
     modifier canWithdraw() {
         require(this.balance >= requestedAmount);
+        _;
+    }
+
+    modifier isNotFraud() {
+        require(state != State.fraud);
         _;
     }
 
@@ -201,7 +210,7 @@ contract Credit is Destructible {
     /** @dev Get current balance.
       * @return this.balance.
       */
-    function getBalance() public view returns(uint256) {
+    function getBalance() public view returns (uint256) {
         return this.balance;
     }
 
@@ -236,6 +245,9 @@ contract Credit is Destructible {
 
             // Set the contract state to repayment.
             state = State.repayment;
+
+            // Log state change.
+            LogCreditStateChanged(state, now);
         }
 
         /** Add the investor to the lenders mapping.
@@ -299,14 +311,23 @@ contract Credit is Destructible {
             LogBorrowerChangeReturned(msg.sender, extraMoney, now);
         }
 
+        // Log borrower installment received.
+        LogBorrowerRepaymentInstallment(msg.sender, msg.value.sub(extraMoney), now);
+
         // Add the repayment installment amount to the total repaid amount.
         repaidAmount = repaidAmount.add(msg.value.sub(extraMoney));
 
         // Check the repaid amount reached the amount to be returned.
         if (repaidAmount == returnAmount) {
 
+            // Log credit repaid.
+            LogBorrowerRepaymentFinished(msg.sender, now);
+
             // Set the credit state to "returning interests".
             state = State.interestReturns;
+
+            // Log state change.
+            LogCreditStateChanged(state, now);
         }
     }
 
@@ -317,9 +338,15 @@ contract Credit is Destructible {
       * It can only be executed once.
       * Transfers the gathered amount to the borrower.
       */
-    function withdraw() public isActive onlyBorrower canWithdraw {
+    function withdraw() public isActive onlyBorrower canWithdraw isNotFraud {
         // Set the state to repayment so we can avoid reentrancy.
         state = State.repayment;
+
+        // Log state change.
+        LogCreditStateChanged(state, now);
+
+        // Log borrower withdrawal.
+        LogBorrowerWithdrawal(msg.sender, this.balance, now);
 
         // Transfer the gathered amount to the credit borrower.
         borrower.transfer(this.balance);
@@ -355,8 +382,14 @@ contract Credit is Destructible {
             // Set the active state to false.
             active = false;
 
+            // Log active state change.
+            LogCreditActiveChanged(active);
+
             // Set the contract stage to expired e.g. its lifespan is over.
             state = State.expired;
+
+            // Log state change.
+            LogCreditStateChange(state, now);
         }
     }
 
@@ -372,7 +405,7 @@ contract Credit is Destructible {
       * @return active
       * @return this.balance
       */
-    function getCreditInfo() public view returns(address, bytes32, uint, uint, uint, uint, uint, uint, State, bool, uint) {
+    function getCreditInfo() public view returns (address, bytes32, uint, uint, uint, uint, uint, uint, State, bool, uint) {
         return (
             borrower,
             description,
@@ -390,7 +423,7 @@ contract Credit is Destructible {
 
     /** @dev Function for revoking the credit.
       */
-    function revokeVote() public isActive isRevokable onlyLender returns(bool) {
+    function revokeVote() public isActive isRevokable onlyLender {
         // Require only one vote per lender.
         require(revokeVoters[msg.sender] == false);
 
@@ -408,8 +441,6 @@ contract Credit is Destructible {
             // Call internal revoke function.
             revoke();
         }
-
-        return true;
     }
 
     /** @dev Revoke internal function.
@@ -419,7 +450,7 @@ contract Credit is Destructible {
         state = State.revoked;
 
         // Log credit revoked.
-        LogCreditRevoked(now);
+        LogCreditStateChanged(state, now);
     }
 
     /** @dev Function for refunding people. */
@@ -439,14 +470,20 @@ contract Credit is Destructible {
             // Set the active state to false.
             active = false;
 
+            // Log active status change.
+            LogCreditStateActiveChanged(active);
+
             // Set the contract stage to expired e.g. its lifespan is over.
             state = State.expired;
+
+            // Log state change.
+            LogCreditStateChanged(state, now);
         }
     }
 
     /** @dev Function for voting the borrower as fraudster.
      */
-    function fraudVote() public isActive onlyLender returns(bool) {
+    function fraudVote() public isActive onlyLender returns (bool) {
         // A lender could vote only once.
         require(fraudVoters[msg.sender] == false);
 
@@ -471,9 +508,13 @@ contract Credit is Destructible {
       * @return
       * calls the owner contract and marks the borrower as fraudster.
       */
-    function fraud() internal returns(bool) {
+    function fraud() internal returns (bool) {
         // call the owner address function with param borrower's address
         bool fraudStatusResult = owner.call(bytes4(keccak256("setFraudStatus(address)")), borrower);
+
+        // Log user marked as fraud.
+        LogBorrowerIsFraud(borrower, fraudStatusResult, now);
+
         return fraudStatusResult;
     }
 
@@ -482,16 +523,25 @@ contract Credit is Destructible {
       * Only accessible to the owner of the contract.
       * Changes the state of the contract.
       */
-    function changeStage(State _state) public onlyOwner {
+    function changeState(State _state) external onlyOwner returns (uint) {
         state = _state;
+
+        // Log state change.
+        LogCreditStateChanged(state, now);
     }
 
     /** @dev Toggle active state function.
       * Only accessible to the owner of the contract.
       * Toggles the active state of the contract.
+      * @return bool
       */
-    function toggleActive() public onlyOwner {
+    function toggleActive() external onlyOwner returns (bool) {
         active = !active;
+
+        // Log active status change.
+        LogCreditStateActiveChanged(active);
+
+        return active;
     }
 
 }

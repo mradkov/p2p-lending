@@ -1,6 +1,3 @@
-const globalAlert = require('../utilities/alerts')
-const moment = require('moment');
-
 module.exports = {
     lend: (req, res) => {
         res.render('users/lend')

@@ -59,4 +59,5 @@ typings/
 # dotenv environment variables file
 .env
 
-
+client-app/node_modules
+smart-contract/build

@@ -24,16 +24,22 @@ contract PeerToPeerLending is Destructible {
 
         // Is the user marked as fraudlent.
         bool fraudStatus;
+
+        // All user credits.
+        address[] allCredits;
     }
 
     // We store all users in a mapping.
-    mapping(address => User) users;
+    mapping(address => User) public users;
 
     // Array of all credits adresses.
     address[] public credits;
 
     /** @dev Events */
     event LogCreditCreated(address indexed _address, address indexed _borrower, uint indexed timestamp);
+    event LogCreditStateChanged(address indexed _address, uint indexed state, uint indexed timestamp);
+    event LogCreditActiveChanged(address indexed _address, bool indexed active, uint indexed timestamp);
+    event LogUserSetFraud(address indexed _address, bool fraudStatus, uint timestamp);
 
     /** @dev Constructor */
     function PeerToPeerLending() public {
@@ -88,9 +94,36 @@ contract PeerToPeerLending is Destructible {
      * @param _borrower The user's address.
      * @return users[_borrower].fraudStatus Boolean of the new fraud status.
      */
-    function setFraudStatus(address _borrower) external returns(bool) {
+    function setFraudStatus(address _borrower) external returns (bool) {
         // Update user fraud status.
         users[_borrower].fraudStatus = true;
+
+        // Log fraud status.
+        LogUserSetFraud(_borrower, users[_borrower].fraudStatus, now);
+
         return users[_borrower].fraudStatus;
+    }
+
+    /** @dev Function to switch active state of a credit.
+      * @param credit The credit's address.
+      * @param state New state.
+      */
+    function changeCreditState (address credit, uint state) public onlyOwner {
+        // Call credit contract changeStage.
+        credit.changeState(state);
+
+        // Log state change.
+        LogCreditStateChanged(credit, state, now);
+    }
+
+    /** @dev Function to toggle active state of credit contract.
+      * @param credit The credit's address.
+      */
+    function changeCreditState (address credit) public onlyOwner {
+        // Call credit contract toggleActive method.
+        bool active = credit.toggleActive();
+
+        // Log state change.
+        LogCreditActiveChanged(credit, active, now);
     }
 }
