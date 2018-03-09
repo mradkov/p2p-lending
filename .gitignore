@@ -61,3 +61,4 @@ typings/
 
 client-app/node_modules
 smart-contract/build
+.idea
