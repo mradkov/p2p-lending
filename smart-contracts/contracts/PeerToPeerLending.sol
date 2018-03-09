@@ -16,44 +16,81 @@ contract PeerToPeerLending is Destructible {
 
     // User structure
     struct User {
+        // Is the user currently credited.
         bool credited;
+
+        // The adress of the active credit.
         address activeCredit;
+
+        // Is the user marked as fraudlent.
         bool fraudStatus;
     }
 
+    // We store all users in a mapping.
     mapping(address => User) users;
-    
+
+    // Array of all credits adresses.
     address[] public credits;
 
     /** @dev Events */
     event LogCreditCreated(address indexed _address, address indexed _borrower, uint indexed timestamp);
 
-    /** @dev Modifiers */
-
+    /** @dev Constructor */
     function PeerToPeerLending() public {
 
     }
 
+    /** @dev Credit application function.
+      * @param requestedAmount Requested funding amount in wei.
+      * @param repaymentsCount Requested repayments count.
+      * @param creditDescription The description of the funding.
+      * @return credit Return credit address.
+      * The function publishesh another contract which is the credit contract.
+      * The owner of the new contract is the present contract.
+      */
     function applyForCredit(uint requestedAmount, uint repaymentsCount, bytes32 creditDescription) public returns(address _credit) {
-        // The person should not have active credits;
+        // The user should not have been credited;
         require(users[msg.sender].credited == false);
+
+        // THe user should not be marked as fraudlent.
         require(users[msg.sender].fraudStatus == false);
+
+        // Assert there is no active credit for the user.
         assert(users[msg.sender].activeCredit == 0);
 
+        // Mark the user as credited. Prevent from reentrancy.
         users[msg.sender].credited = true;
+
+        // Create a new credit contract with the given parameters.
         Credit credit = new Credit(requestedAmount, repaymentsCount, creditDescription);
+
+        // Set the user's active credit contract.
         users[msg.sender].activeCredit = credit;
 
+        // Add the credit contract to our list with contracts.
         credits.push(credit);
+
+        // Log the credit creation event.
         LogCreditCreated(credit, msg.sender, now);
+
+        // Return the address of the newly created credit contract.
         return credit;
     }
 
+    /** @dev Get the list with all credits.
+      * @return credits Returns list of credit addresses.
+      */
     function getCredits() public view returns(address[]) {
         return credits;
     }
 
-    function setFraudStatus(address _borrower) external {
+    /** @dev Sets user fraudlent status true.
+     * @param _borrower The user's address.
+     * @return users[_borrower].fraudStatus Boolean of the new fraud status.
+     */
+    function setFraudStatus(address _borrower) external returns(bool) {
+        // Update user fraud status.
         users[_borrower].fraudStatus = true;
+        return users[_borrower].fraudStatus;
     }
 }

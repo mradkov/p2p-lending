@@ -391,22 +391,34 @@ contract Credit is Destructible {
     /** @dev Function for revoking the credit.
       */
     function revokeVote() public isActive isRevokable onlyLender returns(bool) {
+        // Require only one vote per lender.
         require(revokeVoters[msg.sender] == false);
+
+        // Increment the revokeVotes.
         revokeVotes++;
 
+        // Note the lender has voted.
         revokeVoters[msg.sender] == true;
+
+        // Log lender vote for revoking the credit contract.
         LogLenderVoteForRevoking(msg.sender, now);
 
+        // If the consensus is reached.
         if (lendersCount == revokeVotes) {
+            // Call internal revoke function.
             revoke();
         }
+
         return true;
     }
 
     /** @dev Revoke internal function.
       */
     function revoke() internal {
+        // Change the state to revoked.
         state = State.revoked;
+
+        // Log credit revoked.
         LogCreditRevoked(now);
     }
 
@@ -435,20 +447,34 @@ contract Credit is Destructible {
     /** @dev Function for voting the borrower as fraudster.
      */
     function fraudVote() public isActive onlyLender returns(bool) {
+        // A lender could vote only once.
         require(fraudVoters[msg.sender] == false);
+
+        // Increment fraudVotes count.
         fraudVotes++;
 
+        // Note the lender has voted.
         fraudVoters[msg.sender] == true;
+
+        // Log lenders vote for fraud
         LogLenderVoteForFraud(msg.sender, now);
 
+        // Check if consensus is reached.
         if (lendersCount == fraudVotes) {
-            fraud();
+            // Invoke fraud function.
+            return fraud();
         }
         return true;
     }
 
-    function fraud() internal {
-        owner.call(bytes4(keccak256("setFraudStatus(address)")), borrower);
+    /** @dev Fraund function
+      * @return
+      * calls the owner contract and marks the borrower as fraudster.
+      */
+    function fraud() internal returns(bool) {
+        // call the owner address function with param borrower's address
+        bool fraudStatusResult = owner.call(bytes4(keccak256("setFraudStatus(address)")), borrower);
+        return fraudStatusResult;
     }
 
     /** @dev Change state function.
