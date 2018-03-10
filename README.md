@@ -21,7 +21,7 @@ So we said stop. We've built a p2p blockchain lending service, fair and transpar
   
 ## Chart flow
 
-![Chart flow](https://imgur.com/a/4KHRl)
+![Chart flow](https://i.imgur.com/vRq7nAN.png)
 
 ### Further development
 
