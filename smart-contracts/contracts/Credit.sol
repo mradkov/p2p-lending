@@ -361,11 +361,8 @@ contract Credit is Destructible {
       */
     function requestInterest() public isActive onlyLender canAskForInterest {
 
-        // Calculate the interest.
-        uint returnInterest = returnAmount.div(lendersInvestedAmount[msg.sender]);
-
         // Calculate the amount to be returned to lender.
-        uint lenderReturnAmount = lendersInvestedAmount[msg.sender].mul(returnInterest);
+        uint lenderReturnAmount = lendersInvestedAmount[msg.sender].mul(returnAmount.div(lendersCount).div(lendersInvestedAmount[msg.sender]));
 
         // Assert the contract has enough balance to pay the lender.
         assert(this.balance >= lenderReturnAmount);

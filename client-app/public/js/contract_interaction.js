@@ -2,14 +2,16 @@
  * Created by milenradkov on 8.03.18.
  */
 $(document).ready(function() {
-    let peerToPeerLendingContract = '0xf25186b5081ff5ce73482ad761db0eb0d25abfbf';
+    let peerToPeerLendingContract = '0x8e4c131b37383e431b9cd0635d3cf9f3f628edae';
     let peerToPeerLendingContractABI = [ { "constant": true, "inputs": [ { "name": "", "type": "uint256" } ], "name": "credits", "outputs": [ { "name": "", "type": "address" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "getUserCredits", "outputs": [ { "name": "", "type": "address[]" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "name": "_credit", "type": "address" } ], "name": "changeCreditState", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "getCredits", "outputs": [ { "name": "", "type": "address[]" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [], "name": "destroy", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "owner", "outputs": [ { "name": "", "type": "address" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [ { "name": "", "type": "address" } ], "name": "users", "outputs": [ { "name": "credited", "type": "bool" }, { "name": "activeCredit", "type": "address" }, { "name": "fraudStatus", "type": "bool" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "name": "_borrower", "type": "address" } ], "name": "setFraudStatus", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "name": "requestedAmount", "type": "uint256" }, { "name": "repaymentsCount", "type": "uint256" }, { "name": "interest", "type": "uint256" }, { "name": "creditDescription", "type": "bytes32" } ], "name": "applyForCredit", "outputs": [ { "name": "_credit", "type": "address" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "name": "_recipient", "type": "address" } ], "name": "destroyAndSend", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [ { "name": "_credit", "type": "address" }, { "name": "state", "type": "uint8" } ], "name": "changeCreditState", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "payable": false, "stateMutability": "nonpayable", "type": "constructor" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "_borrower", "type": "address" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogCreditCreated", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "state", "type": "uint8" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogCreditStateChanged", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "active", "type": "bool" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogCreditActiveChanged", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": false, "name": "fraudStatus", "type": "bool" }, { "indexed": false, "name": "timestamp", "type": "uint256" } ], "name": "LogUserSetFraud", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_currentOwner", "type": "address" }, { "indexed": true, "name": "_newOwner", "type": "address" } ], "name": "LogOwnershipTransfered", "type": "event" } ];
 
     let creditContractABI = [ { "constant": true, "inputs": [], "name": "getBalance", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "name": "_state", "type": "uint8" } ], "name": "changeState", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [ { "name": "", "type": "address" } ], "name": "lenders", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [], "name": "toggleActive", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [], "name": "withdraw", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [], "name": "repay", "outputs": [], "payable": true, "stateMutability": "payable", "type": "function" }, { "constant": false, "inputs": [], "name": "revokeVote", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [], "name": "refund", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [], "name": "destroy", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "owner", "outputs": [ { "name": "", "type": "address" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [], "name": "fraudVote", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [], "name": "invest", "outputs": [], "payable": true, "stateMutability": "payable", "type": "function" }, { "constant": false, "inputs": [], "name": "requestInterest", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "getCreditInfo", "outputs": [ { "name": "", "type": "address" }, { "name": "", "type": "bytes32" }, { "name": "", "type": "uint256" }, { "name": "", "type": "uint256" }, { "name": "", "type": "uint256" }, { "name": "", "type": "uint256" }, { "name": "", "type": "uint256" }, { "name": "", "type": "uint256" }, { "name": "", "type": "uint8" }, { "name": "", "type": "bool" }, { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [ { "name": "_recipient", "type": "address" } ], "name": "destroyAndSend", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "inputs": [ { "name": "_requestedAmount", "type": "uint256" }, { "name": "_requestedRepayments", "type": "uint256" }, { "name": "_interest", "type": "uint256" }, { "name": "_description", "type": "bytes32" } ], "payable": false, "stateMutability": "nonpayable", "type": "constructor" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogCreditInitialized", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "state", "type": "uint8" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogCreditStateChanged", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "active", "type": "bool" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogCreditStateActiveChanged", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "_amount", "type": "uint256" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogBorrowerWithdrawal", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "_amount", "type": "uint256" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogBorrowerRepaymentInstallment", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogBorrowerRepaymentFinished", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "_amount", "type": "uint256" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogBorrowerChangeReturned", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "fraudStatus", "type": "bool" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogBorrowerIsFraud", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "_amount", "type": "uint256" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogLenderInvestment", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "_amount", "type": "uint256" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogLenderWithdrawal", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "_amount", "type": "uint256" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogLenderChangeReturned", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogLenderVoteForRevoking", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogLenderVoteForFraud", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_address", "type": "address" }, { "indexed": true, "name": "_amount", "type": "uint256" }, { "indexed": true, "name": "timestamp", "type": "uint256" } ], "name": "LogLenderRefunded", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "name": "_currentOwner", "type": "address" }, { "indexed": true, "name": "_newOwner", "type": "address" } ], "name": "LogOwnershipTransfered", "type": "event" } ];
-
+    
     if (typeof web3 === 'undefined')
         return showError("Please install MetaMask to access the Ethereum Web3 API from your Web browser.");
     let peerToPeerLendingContractInstance = web3.eth.contract(peerToPeerLendingContractABI).at(peerToPeerLendingContract);
+
+    let creditStates = ["Investment", "Repayment", "Interest returns", "Expired", "Revoked", "Fraud"];
 
     peerToPeerLendingContractInstance.getCredits(function(err, result) {
         if (err){
@@ -46,8 +48,9 @@ $(document).ready(function() {
                 $('#activeCredits')
                     .append(`<div class="col-sm-6 mt-5">
                                 <div class="card">
-                                    <div class="card-header">
+                                    <div class="card-header ${creditContractInfo.active == true ? "alert-success" : "alert-secondary"}">
                                         <h5 class="card-title">${creditContractInfo.description}</h5>
+                                        <p>State: <span class="badge badge-primary">${creditStates[creditContractInfo.state]}</span></p>
                                     </div>
                                     <div class="card-body">
                                         <p class="card-text">
@@ -152,9 +155,39 @@ $(document).ready(function() {
                 })
             }
         })
+    });
 
+    $('body').on('click', 'button[name="repayInstallment"]', function (e) {
+        e.preventDefault();
+        let address = $(this).attr('data-contract-address');
+        let amountField = $(this).closest('div.investment-card').find('input');
+        let amount = amountField.val();
+        let selectedCreditContract = web3.eth.contract(creditContractABI).at(address);
+        let getData = selectedCreditContract.repay.getData();
 
+        if (amount < 0 || amount == "" || amount == "undefined"){
+            swal({
+                type: 'error',
+                title: 'Oops...',
+                text: 'Amount is missing!',
+            })
+            return;
+        }
 
+        web3.eth.sendTransaction({from: web3.eth.coinbase, to: address, data: getData, value:web3.toWei(amount, "ether")}, function (err, result) {
+            if (err){
+                console.log(err);
+                return;
+            }
+
+            swal(
+                'Success!',
+                'Your repayment was collected.',
+                'success'
+            )
+            amountField.val('');
+            console.log("tx.hash: "+result.transactionHash);
+        })
     });
 
     $('body').on('click', 'button[name="requestInterest"]', function (e) {
@@ -246,6 +279,29 @@ $(document).ready(function() {
         })
     });
 
+    $('body').on('click', 'button[name="withdraw"]', function (e) {
+        e.preventDefault();
+        let address = $(this).attr('data-contract-address');
+        let selectedCreditContract = web3.eth.contract(creditContractABI).at(address);
+        let getData = selectedCreditContract.withdraw.getData();
+
+        console.log('withdraw ' + address);
+
+        selectedCreditContract.withdraw(function (err, result) {
+            if (err){
+                console.log(err);
+                return;
+            }
+
+            swal(
+                'Success!',
+                'Your account was credited.',
+                'success'
+            )
+            console.log(result);
+        })
+    });
+
     $('body').on('submit', '#borrowRequest', function (e) {
         e.preventDefault();
 
@@ -331,6 +387,79 @@ $(document).ready(function() {
     else if (top.location.pathname === "/profile") {
         console.log('profile');
 
+        peerToPeerLendingContractInstance.getUserCredits(function(err, result) {
+            if (err){
+                console.log(err);
+                return;
+            }
+
+            console.log(result);
+
+            result.forEach(function(index){
+                let creditAddress = index;
+                let creditContract = web3.eth.contract(creditContractABI).at(creditAddress);
+
+                creditContract.getCreditInfo(function(err, info) {
+                    if (err){
+                        console.log(err);
+                    }
+
+                    let creditContractInfo = {
+                        address: creditAddress,
+                        borrower: info[0],
+                        description: web3.toAscii(info[1]),
+                        requestedAmount: info[2].toString(10),
+                        requestedRepayments: info[3].toString(10),
+                        repaymentInstallment: info[4].toString(10),
+                        remainingRepayments: info[5].toString(10),
+                        interest: info[6].toString(10),
+                        returnAmount: info[7].toString(10),
+                        state: parseInt(info[8].toString(10)),
+                        active: info[9],
+                        balance: info[10].toString(10)
+                    }
+
+                    $('#myCredits')
+                        .append(`<div class="col-sm-6 mt-5">
+                                <div class="card">
+                                    <div class="card-header ${creditContractInfo.active == true ? "alert-success" : "alert-secondary"}">
+                                        <h5 class="card-title">${creditContractInfo.description}</h5>
+                                        <p>State: <span class="badge badge-primary">${creditStates[creditContractInfo.state]}</span></p>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Address:</span> ${creditContractInfo.address}
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Requested:</span> ${web3.fromWei(creditContractInfo.requestedAmount, "ether")} ETH
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Funded:</span> ${web3.fromWei(creditContractInfo.balance, "ether")} ETH
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Installments Count:</span> ${creditContractInfo.requestedRepayments}
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="credit-description-property">Interest:</span> ${web3.fromWei(creditContractInfo.interest, "ether")} ETH
+                                        </p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="input-group mb-3 investment-card">
+                                          <input type="number" class="form-control" name="amount" placeholder="Amount" aria-label="Amount" aria-describedby="basic-addon2">
+                                          <div class="input-group-append">
+                                            <button class="btn btn-outline-success" type="button" name="repayInstallment" data-contract-address="${creditContractInfo.address}">Repay installment</button>
+                                          </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-info" name="withdraw" data-contract-address="${creditContractInfo.address}">Withdraw</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            `)
+                })
+            })
+        });
 
 
     }

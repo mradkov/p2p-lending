@@ -76,6 +76,9 @@ contract PeerToPeerLending is Destructible {
         // Add the credit contract to our list with contracts.
         credits.push(credit);
 
+        // Add the credit to the user's profile.
+        users[msg.sender].allCredits.push(credit);
+
         // Log the credit creation event.
         LogCreditCreated(credit, msg.sender, now);
 
