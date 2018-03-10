@@ -76,7 +76,7 @@ contract Credit is Destructible {
 
     // Time needed for a revoke voting to start.
     // To be changed in production accordingly.
-    uint revokeTimeNeeded = now + 1 minutes;
+    uint revokeTimeNeeded = block.timestamp + 1 seconds;
 
     // Revoke votes count.
     uint fraudVotes = 0;
@@ -150,7 +150,7 @@ contract Credit is Destructible {
     }
 
     modifier isRevokable() {
-        require(now >= revokeTimeNeeded);
+        require(block.timestamp >= revokeTimeNeeded);
         require(state == State.investment);
         _;
     }
@@ -201,10 +201,10 @@ contract Credit is Destructible {
         description = _description;
 
         // Set the initialization date.
-        requestedDate = now;
+        requestedDate = block.timestamp;
 
         // Log credit initialization.
-        LogCreditInitialized(borrower, now);
+        LogCreditInitialized(borrower, block.timestamp);
     }
 
     /** @dev Get current balance.
@@ -240,14 +240,14 @@ contract Credit is Destructible {
                 msg.sender.transfer(extraMoney);
 
                 // Log change returned.
-                LogLenderChangeReturned(msg.sender, extraMoney, now);
+                LogLenderChangeReturned(msg.sender, extraMoney, block.timestamp);
             }
 
             // Set the contract state to repayment.
             state = State.repayment;
 
             // Log state change.
-            LogCreditStateChanged(state, now);
+            LogCreditStateChanged(state, block.timestamp);
         }
 
         /** Add the investor to the lenders mapping.
@@ -262,7 +262,7 @@ contract Credit is Destructible {
         lendersInvestedAmount[msg.sender] = lendersInvestedAmount[msg.sender].add(msg.value.sub(extraMoney));
 
         // Log lender invested amount.
-        LogLenderInvestment(msg.sender, msg.value.sub(extraMoney), now);
+        LogLenderInvestment(msg.sender, msg.value.sub(extraMoney), block.timestamp);
     }
 
     /** @dev Repayment function.
@@ -285,7 +285,7 @@ contract Credit is Destructible {
         remainingRepayments--;
 
         // Update last repayment date.
-        lastRepaymentDate = now;
+        lastRepaymentDate = block.timestamp;
 
         // Initialize an memory variable for the extra money that may have been sent.
         uint extraMoney = 0;
@@ -308,11 +308,11 @@ contract Credit is Destructible {
             msg.sender.transfer(extraMoney);
 
             // Log the return of the extra money.
-            LogBorrowerChangeReturned(msg.sender, extraMoney, now);
+            LogBorrowerChangeReturned(msg.sender, extraMoney, block.timestamp);
         }
 
         // Log borrower installment received.
-        LogBorrowerRepaymentInstallment(msg.sender, msg.value.sub(extraMoney), now);
+        LogBorrowerRepaymentInstallment(msg.sender, msg.value.sub(extraMoney), block.timestamp);
 
         // Add the repayment installment amount to the total repaid amount.
         repaidAmount = repaidAmount.add(msg.value.sub(extraMoney));
@@ -321,13 +321,13 @@ contract Credit is Destructible {
         if (repaidAmount == returnAmount) {
 
             // Log credit repaid.
-            LogBorrowerRepaymentFinished(msg.sender, now);
+            LogBorrowerRepaymentFinished(msg.sender, block.timestamp);
 
             // Set the credit state to "returning interests".
             state = State.interestReturns;
 
             // Log state change.
-            LogCreditStateChanged(state, now);
+            LogCreditStateChanged(state, block.timestamp);
         }
     }
 
@@ -343,10 +343,10 @@ contract Credit is Destructible {
         state = State.repayment;
 
         // Log state change.
-        LogCreditStateChanged(state, now);
+        LogCreditStateChanged(state, block.timestamp);
 
         // Log borrower withdrawal.
-        LogBorrowerWithdrawal(msg.sender, this.balance, now);
+        LogBorrowerWithdrawal(msg.sender, this.balance, block.timestamp);
 
         // Transfer the gathered amount to the credit borrower.
         borrower.transfer(this.balance);
@@ -362,7 +362,8 @@ contract Credit is Destructible {
     function requestInterest() public isActive onlyLender canAskForInterest {
 
         // Calculate the amount to be returned to lender.
-        uint lenderReturnAmount = lendersInvestedAmount[msg.sender].mul(returnAmount.div(lendersCount).div(lendersInvestedAmount[msg.sender]));
+//        uint lenderReturnAmount = lendersInvestedAmount[msg.sender].mul(returnAmount.div(lendersCount).div(lendersInvestedAmount[msg.sender]));
+        uint lenderReturnAmount = returnAmount / lendersCount;
 
         // Assert the contract has enough balance to pay the lender.
         assert(this.balance >= lenderReturnAmount);
@@ -371,7 +372,7 @@ contract Credit is Destructible {
         msg.sender.transfer(lenderReturnAmount);
 
         // Log the transfer to lender.
-        LogLenderWithdrawal(msg.sender, lenderReturnAmount, now);
+        LogLenderWithdrawal(msg.sender, lenderReturnAmount, block.timestamp);
 
         // Check if the contract balance is drawned.
         if (this.balance == 0) {
@@ -380,13 +381,13 @@ contract Credit is Destructible {
             active = false;
 
             // Log active state change.
-            LogCreditStateActiveChanged(active, now);
+            LogCreditStateActiveChanged(active, block.timestamp);
 
             // Set the contract stage to expired e.g. its lifespan is over.
             state = State.expired;
 
             // Log state change.
-            LogCreditStateChanged(state, now);
+            LogCreditStateChanged(state, block.timestamp);
         }
     }
 
@@ -431,7 +432,7 @@ contract Credit is Destructible {
         revokeVoters[msg.sender] == true;
 
         // Log lender vote for revoking the credit contract.
-        LogLenderVoteForRevoking(msg.sender, now);
+        LogLenderVoteForRevoking(msg.sender, block.timestamp);
 
         // If the consensus is reached.
         if (lendersCount == revokeVotes) {
@@ -447,7 +448,7 @@ contract Credit is Destructible {
         state = State.revoked;
 
         // Log credit revoked.
-        LogCreditStateChanged(state, now);
+        LogCreditStateChanged(state, block.timestamp);
     }
 
     /** @dev Function for refunding people. */
@@ -459,7 +460,7 @@ contract Credit is Destructible {
         msg.sender.transfer(lendersInvestedAmount[msg.sender]);
 
         // Log the transfer to lender.
-        LogLenderRefunded(msg.sender, lendersInvestedAmount[msg.sender], now);
+        LogLenderRefunded(msg.sender, lendersInvestedAmount[msg.sender], block.timestamp);
 
         // Check if the contract balance is drawned.
         if (this.balance == 0) {
@@ -468,13 +469,13 @@ contract Credit is Destructible {
             active = false;
 
             // Log active status change.
-            LogCreditStateActiveChanged(active, now);
+            LogCreditStateActiveChanged(active, block.timestamp);
 
             // Set the contract stage to expired e.g. its lifespan is over.
             state = State.expired;
 
             // Log state change.
-            LogCreditStateChanged(state, now);
+            LogCreditStateChanged(state, block.timestamp);
         }
     }
 
@@ -491,7 +492,7 @@ contract Credit is Destructible {
         fraudVoters[msg.sender] == true;
 
         // Log lenders vote for fraud
-        LogLenderVoteForFraud(msg.sender, now);
+        LogLenderVoteForFraud(msg.sender, block.timestamp);
 
         // Check if consensus is reached.
         if (lendersCount == fraudVotes) {
@@ -510,7 +511,7 @@ contract Credit is Destructible {
         bool fraudStatusResult = owner.call(bytes4(keccak256("setFraudStatus(address)")), borrower);
 
         // Log user marked as fraud.
-        LogBorrowerIsFraud(borrower, fraudStatusResult, now);
+        LogBorrowerIsFraud(borrower, fraudStatusResult, block.timestamp);
 
         return fraudStatusResult;
     }
@@ -524,7 +525,7 @@ contract Credit is Destructible {
         state = _state;
 
         // Log state change.
-        LogCreditStateChanged(state, now);
+        LogCreditStateChanged(state, block.timestamp);
     }
 
     /** @dev Toggle active state function.
@@ -536,7 +537,7 @@ contract Credit is Destructible {
         active = !active;
 
         // Log active status change.
-        LogCreditStateActiveChanged(active, now);
+        LogCreditStateActiveChanged(active, block.timestamp);
 
         return active;
     }

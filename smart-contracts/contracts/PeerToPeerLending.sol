@@ -80,7 +80,7 @@ contract PeerToPeerLending is Destructible {
         users[msg.sender].allCredits.push(credit);
 
         // Log the credit creation event.
-        LogCreditCreated(credit, msg.sender, now);
+        LogCreditCreated(credit, msg.sender, block.timestamp);
 
         // Return the address of the newly created credit contract.
         return credit;
@@ -109,7 +109,7 @@ contract PeerToPeerLending is Destructible {
         users[_borrower].fraudStatus = true;
 
         // Log fraud status.
-        LogUserSetFraud(_borrower, users[_borrower].fraudStatus, now);
+        LogUserSetFraud(_borrower, users[_borrower].fraudStatus, block.timestamp);
 
         return users[_borrower].fraudStatus;
     }
@@ -124,7 +124,7 @@ contract PeerToPeerLending is Destructible {
         credit.changeState(state);
 
         // Log state change.
-        LogCreditStateChanged(credit, state, now);
+        LogCreditStateChanged(credit, state, block.timestamp);
     }
 
     /** @dev Function to toggle active state of credit contract.
@@ -136,6 +136,6 @@ contract PeerToPeerLending is Destructible {
         bool active = credit.toggleActive();
 
         // Log state change.
-        LogCreditActiveChanged(credit, active, now);
+        LogCreditActiveChanged(credit, active, block.timestamp);
     }
 }
