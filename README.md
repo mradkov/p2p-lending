@@ -1,6 +1,14 @@
 # P2P Lending platform
 Peer 2 peer lending platform on the Ethereum blockchain network.
 
+# About
+
+We all know that in the Banking industry it is all about the constant search of bigger profits without caring about customers.
+
+Credit borrowers are paying higher interest rates every day while people investing are having poor returns. There are also a few hidden fees that the customer doesn't know about.
+
+So we said stop. We've built a p2p blockchain lending service, fair and transparent.
+
 # Features
 
   - Ask for funding (borrow)
@@ -10,10 +18,16 @@ Peer 2 peer lending platform on the Ethereum blockchain network.
   - Invest in project/credit (lend)
   - Vote for revoke contract / refund investments.
   - Mark project as Fraud.
+  
+## Chart flow
+
+![Chart flow](https://imgur.com/a/4KHRl)
 
 ### Further development
 
-  - 
+  - Improve external contract calls.
+  - Minimize gas cost.
+  - Create more investors protection.
 
 ### Requirements
 * [Node.js](https://nodejs.org/)
