@@ -89,8 +89,8 @@ contract Credit is Destructible {
     *
     */
     event LogCreditInitialized(address indexed _address, uint indexed timestamp);
-    event LogCreditStateChanged(uint indexed state, uint indexed timestamp);
-    event LogCreditStateActiveChanged(uint indexed active);
+    event LogCreditStateChanged(State indexed state, uint indexed timestamp);
+    event LogCreditStateActiveChanged(bool indexed active, uint indexed timestamp);
 
     event LogBorrowerWithdrawal(address indexed _address, uint indexed _amount, uint indexed timestamp);
     event LogBorrowerRepaymentInstallment(address indexed _address, uint indexed _amount, uint indexed timestamp);
@@ -165,7 +165,7 @@ contract Credit is Destructible {
       * @param _requestedRepayments Requested number of repayments.
       * @param _description Credit description.
       */
-    function Credit(uint _requestedAmount, uint _requestedRepayments, bytes32 _description) public {
+    function Credit(uint _requestedAmount, uint _requestedRepayments, uint _interest, bytes32 _description) public {
 
         /** Set the borrower of the contract to the tx.origin
           * We are using tx.origin, because the contract is going to be published
@@ -174,7 +174,7 @@ contract Credit is Destructible {
         borrower = tx.origin;
 
         // Set the interest for the credit.
-        interest = 5000;
+        interest = _interest;
 
         // Set the requested amount.
         requestedAmount = _requestedAmount;
@@ -383,13 +383,13 @@ contract Credit is Destructible {
             active = false;
 
             // Log active state change.
-            LogCreditActiveChanged(active);
+            LogCreditStateActiveChanged(active, now);
 
             // Set the contract stage to expired e.g. its lifespan is over.
             state = State.expired;
 
             // Log state change.
-            LogCreditStateChange(state, now);
+            LogCreditStateChanged(state, now);
         }
     }
 
@@ -407,18 +407,18 @@ contract Credit is Destructible {
       */
     function getCreditInfo() public view returns (address, bytes32, uint, uint, uint, uint, uint, uint, State, bool, uint) {
         return (
-            borrower,
-            description,
-            requestedAmount,
-            requestedRepayments,
-            repaymentInstallment,
-            remainingRepayments,
-            interest,
-            returnAmount,
-            state,
-            active,
-            this.balance
-            );
+        borrower,
+        description,
+        requestedAmount,
+        requestedRepayments,
+        repaymentInstallment,
+        remainingRepayments,
+        interest,
+        returnAmount,
+        state,
+        active,
+        this.balance
+        );
     }
 
     /** @dev Function for revoking the credit.
@@ -471,7 +471,7 @@ contract Credit is Destructible {
             active = false;
 
             // Log active status change.
-            LogCreditStateActiveChanged(active);
+            LogCreditStateActiveChanged(active, now);
 
             // Set the contract stage to expired e.g. its lifespan is over.
             state = State.expired;
@@ -539,7 +539,7 @@ contract Credit is Destructible {
         active = !active;
 
         // Log active status change.
-        LogCreditStateActiveChanged(active);
+        LogCreditStateActiveChanged(active, now);
 
         return active;
     }

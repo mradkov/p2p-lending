@@ -37,7 +37,7 @@ contract PeerToPeerLending is Destructible {
 
     /** @dev Events */
     event LogCreditCreated(address indexed _address, address indexed _borrower, uint indexed timestamp);
-    event LogCreditStateChanged(address indexed _address, uint indexed state, uint indexed timestamp);
+    event LogCreditStateChanged(address indexed _address, Credit.State indexed state, uint indexed timestamp);
     event LogCreditActiveChanged(address indexed _address, bool indexed active, uint indexed timestamp);
     event LogUserSetFraud(address indexed _address, bool fraudStatus, uint timestamp);
 
@@ -54,7 +54,7 @@ contract PeerToPeerLending is Destructible {
       * The function publishesh another contract which is the credit contract.
       * The owner of the new contract is the present contract.
       */
-    function applyForCredit(uint requestedAmount, uint repaymentsCount, bytes32 creditDescription) public returns(address _credit) {
+    function applyForCredit(uint requestedAmount, uint repaymentsCount, uint interest, bytes32 creditDescription) public returns(address _credit) {
         // The user should not have been credited;
         require(users[msg.sender].credited == false);
 
@@ -68,7 +68,7 @@ contract PeerToPeerLending is Destructible {
         users[msg.sender].credited = true;
 
         // Create a new credit contract with the given parameters.
-        Credit credit = new Credit(requestedAmount, repaymentsCount, creditDescription);
+        Credit credit = new Credit(requestedAmount, repaymentsCount, interest, creditDescription);
 
         // Set the user's active credit contract.
         users[msg.sender].activeCredit = credit;
@@ -86,8 +86,15 @@ contract PeerToPeerLending is Destructible {
     /** @dev Get the list with all credits.
       * @return credits Returns list of credit addresses.
       */
-    function getCredits() public view returns(address[]) {
+    function getCredits() public view returns (address[]) {
         return credits;
+    }
+
+    /** @dev Get all users credits.
+      * @return users[msg.sender].allCredits Return user credits.
+      */
+    function getUserCredits() public view returns (address[]) {
+        return users[msg.sender].allCredits;
     }
 
     /** @dev Sets user fraudlent status true.
@@ -105,11 +112,12 @@ contract PeerToPeerLending is Destructible {
     }
 
     /** @dev Function to switch active state of a credit.
-      * @param credit The credit's address.
+      * @param _credit The credit's address.
       * @param state New state.
       */
-    function changeCreditState (address credit, uint state) public onlyOwner {
+    function changeCreditState (Credit _credit, Credit.State state) public onlyOwner {
         // Call credit contract changeStage.
+        Credit credit = Credit(_credit);
         credit.changeState(state);
 
         // Log state change.
@@ -117,10 +125,11 @@ contract PeerToPeerLending is Destructible {
     }
 
     /** @dev Function to toggle active state of credit contract.
-      * @param credit The credit's address.
+      * @param _credit The credit's address.
       */
-    function changeCreditState (address credit) public onlyOwner {
+    function changeCreditState (Credit _credit) public onlyOwner {
         // Call credit contract toggleActive method.
+        Credit credit = Credit(_credit);
         bool active = credit.toggleActive();
 
         // Log state change.
