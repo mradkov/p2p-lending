@@ -63,9 +63,19 @@ $ npm start
 
 Want to contribute? Great!
 
-License
-----
+# Authors
 
-MIT
+    Milen Radkov - milenradkov@me.com
+        Email - milenradkov@me.com
+        LinkedIn - https://www.linkedin.com/in/milenradkov/
+
+# Acknowledgments
+
+    SoftUni - https://softuni.bg/
+    ACADEMY: SCHOOL OF BLOCKCHAIN - http://www.kingsland.academy/
+
+# License
+
+  MIT
 
 **Free Software, Hell Yeah!**
