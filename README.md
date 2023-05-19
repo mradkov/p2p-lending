@@ -43,7 +43,7 @@ So we said stop. We've built a p2p blockchain lending service, fair and transpar
 
 ```sh
 $ cd p2p-lending/smart-contracts
-$ truffle complie
+$ truffle compile
 $ truffle migrate --reset --network development --verbose-rpc
 ```
 
